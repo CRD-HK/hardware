@@ -1,0 +1,110 @@
+//Arduino 1.8.9 IDE
+//The CRD-HK Science & Technology branch, for the SBC project 2019-2020 (CRD-HK/HKU)
+
+
+#include <Wire.h>                
+#define address 104              
+
+
+
+char computerdata[20];           
+byte received_from_computer = 0; 
+byte serial_event = 0;           
+byte code = 0;                   
+char flow_data[20];              
+byte in_char = 0;                
+byte i = 0;                      
+int time_ = 250;                 
+
+char *total_volume;              
+char *flow_rate;                 
+
+float volume_float;              
+float rate_float;                
+
+
+void setup()                    
+{
+  Serial.begin(9600);           
+  Wire.begin();                 
+}
+
+
+void serialEvent() {                                                              
+  received_from_computer = Serial.readBytesUntil(13, computerdata, 20);           
+  computerdata[received_from_computer] = 0;                                       
+  serial_event = true;                                                            
+}
+
+void loop() {                                                                     
+  if (serial_event == true) {                                                     
+       for(i=0;i<=received_from_computer;i++){                                    
+       computerdata[i] = tolower(computerdata[i]);                                 
+  }
+  i=0;                                                                                 
+      
+                                           
+    Wire.beginTransmission(address);                                              
+    Wire.write(computerdata);                                                     
+    Wire.endTransmission();                                                       
+
+    
+    if (strcmp(computerdata, "sleep") != 0) {                                     
+                                                                                  
+
+      delay(time_);                                                                
+       
+      Wire.requestFrom(address, 20, 1);                                           
+      code = Wire.read();                                                         
+
+      switch (code) {                       
+        case 1:                             
+          Serial.println("Success");        
+          break;                            
+
+        case 2:                             
+          Serial.println("Failed");         
+          break;                            
+
+        case 254:                           
+          Serial.println("Pending");        
+          break;                            
+
+        case 255:                           
+          Serial.println("No Data");        
+          break;                            
+    }
+
+
+
+    while (Wire.available()) {              
+      in_char = Wire.read();                
+      flow_data[i] = in_char;               
+      i += 1;                               
+      if (in_char == 0) {                   
+        i = 0;                              
+        break;                              
+      }
+    }
+
+    Serial.println(flow_data);              
+  }
+  serial_event = false;                     
+ 
+ 
+  }
+
+}
+void string_pars() {                            
+                                                
+
+  total_volume = strtok(flow_data, ",");        
+  flow_rate = strtok(NULL, ",");                
+ 
+  Serial.print("volume:");                      
+  Serial.println(total_volume);                 
+
+  Serial.print("rate:");                        
+  Serial.println(flow_rate);                    
+  Serial.println();                             
+}
